@@ -7,7 +7,8 @@ import PackageDescription
 let package = Package(
     name: "MyAppCore",
     platforms: [
-        .iOS(.v18),
+        .iOS(.v26),
+        // Lower than the app so `make test` runs on any Mac that runs Xcode 26.
         .macOS(.v15),
     ],
     products: [

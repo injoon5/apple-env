@@ -5,12 +5,15 @@
     "XCODE_XIP": "${localEnv:XCODE_XIP}",
     "APPLE_SDK_URL": "${localEnv:APPLE_SDK_URL}",
     "APPLE_SDK_TOKEN": "${localEnv:APPLE_SDK_TOKEN}",
-    "APPLE_SDK_SHA256": "${localEnv:APPLE_SDK_SHA256}"
+    "APPLE_SDK_SHA256": "${localEnv:APPLE_SDK_SHA256}",
+    "APPLE_SDK_PASSPHRASE": "${localEnv:APPLE_SDK_PASSPHRASE}"
   },
   "postCreateCommand": "scripts/bootstrap.sh",
   "customizations": {
     "vscode": {
-      "extensions": ["swiftlang.swift-vscode"]
+      "extensions": [
+        "swiftlang.swift-vscode"
+      ]
     }
   }
 }

@@ -33,7 +33,7 @@ else
     ok ios-sdk "${sdk%.sdk}"
     can_build=1
   else
-    no ios-sdk "none: tests and lint only (README: Linux, Claude Code cloud)"
+    no ios-sdk "none: tests and lint only (README, 'iOS SDK')"
   fi
 fi
 if [ "$(uname -s)" = Darwin ]; then

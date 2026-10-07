@@ -1,0 +1,55 @@
+name: iOS SDK
+
+# Packs the iOS SDK pieces of the runner's Xcode (the one whose Swift matches
+# .swift-version) into the `darwin-sdk` artifact, encrypted with the
+# APPLE_SDK_PASSPHRASE secret. Linux machines and Claude Code cloud sessions
+# with the same APPLE_SDK_PASSPHRASE download it during `make setup`.
+
+on:
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: macOS runner label (must have the Xcode that matches .swift-version)
+        default: macos-26
+  schedule:
+    # Artifacts expire after 90 days; refresh monthly.
+    - cron: "41 6 1 * *"
+
+permissions:
+  contents: read
+
+jobs:
+  pack:
+    runs-on: ${{ inputs.runner || 'macos-26' }}
+    timeout-minutes: 60
+    env:
+      APPLE_SDK_PASSPHRASE: ${{ secrets.APPLE_SDK_PASSPHRASE }}
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+    steps:
+      - name: Check the passphrase secret
+        id: check
+        run: |
+          if [ -n "$APPLE_SDK_PASSPHRASE" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          elif [ "$GITHUB_EVENT_NAME" = schedule ]; then
+            echo "::notice::APPLE_SDK_PASSPHRASE is not set; skipping."
+          else
+            echo "::error::Add the APPLE_SDK_PASSPHRASE repository secret (Settings > Secrets and variables > Actions). The SDK is never uploaded unencrypted."
+            exit 1
+          fi
+      - uses: actions/checkout@v5
+        if: steps.check.outputs.ok == 'true'
+      - name: Install zstd and OpenSSL 3
+        if: steps.check.outputs.ok == 'true'
+        run: brew install zstd openssl@3
+      - name: Pack the SDK
+        if: steps.check.outputs.ok == 'true'
+        run: scripts/sdk.sh pack "$RUNNER_TEMP/darwin-sdk.tar.zst.enc"
+      - uses: actions/upload-artifact@v4
+        if: steps.check.outputs.ok == 'true'
+        with:
+          name: darwin-sdk
+          path: ${{ runner.temp }}/darwin-sdk.tar.zst.enc
+          compression-level: 0
+          retention-days: 90
+          if-no-files-found: error

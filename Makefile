@@ -77,7 +77,7 @@ upload:
 
 endif
 
-sdk-pack: ## Archive the cached iOS SDK for APPLE_SDK_URL (Linux)
+sdk-pack: ## Archive the iOS SDK for Linux machines (macOS: from Xcode; Linux: installed SDK)
 	@$(ENV) scripts/sdk.sh pack
 
 rename: ## Rename the app: make rename NAME=Notes BUNDLE_ID=com.you.notes

@@ -11,9 +11,11 @@
 # toolchain: xtool, the darwin SDK, Linux stand-ins for actool/ibtool/momc,
 # rcodesign and pymobiledevice3. Its SDK comes from the first of:
 #   - a darwin SDK already registered (`swift sdk list`)
+#   - an SDK cached in ~/.cache/xtool by an earlier install
 #   - XCODE_XIP=/path/to/Xcode_27.xip (download it once from Apple)
 #   - APPLE_SDK_URL=<private URL of an Xcode .xip or of a `scripts/sdk.sh pack` archive>
-#   - an SDK cached in ~/.cache/xtool by an earlier install
+#   - APPLE_SDK_PASSPHRASE=<secret>: the encrypted artifact of this repository's
+#     "iOS SDK" workflow, which packs the SDK on a GitHub macOS runner
 # Safe to re-run: finished steps are skipped.
 set -euo pipefail
 
@@ -26,6 +28,8 @@ SWIFT_VERSION="$(tr -d '[:space:]' <"$ROOT/.swift-version")"
 LIMD_PREFIX="$APPLE_ENV_HOME/libimobiledevice"
 STATE_DIR="$APPLE_ENV_HOME/state"
 SDK_CACHE="${SDK_CACHE:-$HOME/.cache/xtool}"
+# Where `sdk.sh fetch` stages Xcode SDK pieces; install-toolchain.sh builds from it.
+export SDK_SRC="${SDK_SRC:-$HOME/xcode-apple-sdk-src}"
 
 log() { printf '\033[1m==> %s\033[0m\n' "$*" >&2; }
 warn() { printf 'warning: %s\n' "$*" >&2; }
@@ -226,13 +230,12 @@ ios_stamp() {
   echo "$OMARCHY_APPLE_DEV_REV swift-$SWIFT_VERSION ${sdk:-nosdk}"
 }
 
-setup_linux_ios() {
-  local fetched_xip=""
-  if ! sdk_registered && [ -z "${XCODE_XIP:-}" ] && [ -n "${APPLE_SDK_URL:-}" ]; then
-    fetched_xip=$("$ROOT/scripts/sdk.sh" fetch)
-    [ -n "$fetched_xip" ] && export XCODE_XIP="$fetched_xip"
-  fi
+sdk_source_available() {
+  sdk_registered || sdk_cached || [ -d "$SDK_SRC/Xcode.app" ] || [ -n "${XCODE_XIP:-}" ] ||
+    [ -n "${APPLE_SDK_URL:-}" ] || [ -n "${APPLE_SDK_PASSPHRASE:-}" ]
+}
 
+setup_linux_ios() {
   if [ -x "$HOME/.local/bin/xtool" ] && sdk_registered && [ "$(cat "$STATE_DIR/ios" 2>/dev/null)" = "$(ios_stamp)" ]; then
     log "iOS toolchain up to date ($(ios_stamp))"
     return 0
@@ -241,13 +244,21 @@ setup_linux_ios() {
   case "$OS" in
     debian)
       apt_install build-essential autoconf automake libtool-bin pkg-config libssl-dev zlib1g-dev \
-        liblzma-dev libcurl4-openssl-dev libxml2-dev zip unzip zstd python3 python3-venv \
+        liblzma-dev libcurl4-openssl-dev libxml2-dev zip unzip zstd openssl python3 python3-venv \
         usbmuxd poppler-utils libheif-examples librsvg2-bin
       build_limd
       ;;
     arch) ;;
     *) warn "untested distro: install the equivalents of the Debian packages in scripts/bootstrap.sh" ;;
   esac
+
+  local fetched_xip="" staged=""
+  if ! sdk_registered && ! sdk_cached && [ ! -d "$SDK_SRC/Xcode.app" ] && [ -z "${XCODE_XIP:-}" ] &&
+    { [ -n "${APPLE_SDK_URL:-}" ] || [ -n "${APPLE_SDK_PASSPHRASE:-}" ]; }; then
+    fetched_xip=$("$ROOT/scripts/sdk.sh" fetch)
+    if [ -n "$fetched_xip" ]; then export XCODE_XIP="$fetched_xip"; fi
+    [ -d "$SDK_SRC/Xcode.app" ] && staged=1
+  fi
   fetch_upstream
 
   local args=(--user-only) out rc=0
@@ -278,11 +289,13 @@ setup_linux_ios() {
     else
       warn "xtool is installed, but there is no iOS SDK yet. Download Xcode $XCODE_MAJOR (.xip) from"
       warn "https://developer.apple.com/download/all/?q=Xcode and run: XCODE_XIP=/path/to/Xcode.xip make setup"
-      warn "Cloud sessions: set APPLE_SDK_URL instead (README, 'Claude Code cloud')."
+      warn "Or let GitHub Actions pack it: README, 'iOS SDK'."
       return 0
     fi
   fi
+  # The SDK is now cached in ~/.cache/xtool; drop the downloaded sources.
   if [ -n "$fetched_xip" ]; then rm -f "$fetched_xip"; fi
+  if [ -n "$staged" ]; then rm -rf "$SDK_SRC"; fi
   sdk_registered || die "the darwin SDK is still not registered; see $out"
   ios_stamp >"$STATE_DIR/ios"
   log "iOS toolchain ready ($(ios_stamp))"
@@ -296,7 +309,7 @@ case "${1:-}" in
   --ios) MODE=ios ;;
   "" | --auto) ;;
   -h | --help)
-    sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '2,19p' "$0" | sed 's/^# \{0,1\}//'
     exit 0
     ;;
   *) die "unknown option: $1 (try --help)" ;;
@@ -312,11 +325,11 @@ elif [ "$MODE" = ios ]; then
   setup_linux_ios
 else
   setup_linux_core
-  if sdk_registered || sdk_cached || [ -n "${XCODE_XIP:-}" ] || [ -n "${APPLE_SDK_URL:-}" ]; then
+  if sdk_source_available; then
     setup_linux_ios
   else
     log "No iOS SDK source found: installed the Swift toolchain only (make test, make lint)."
-    log "For iOS builds see README, 'Linux'."
+    log "For iOS builds see README, 'iOS SDK'."
   fi
 fi
 "$ROOT/scripts/doctor.sh"

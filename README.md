@@ -9,7 +9,7 @@ pinned and installed for you on Ubuntu, Debian and Arch (Omarchy).
 |---|---|
 | Swift | 6.4.0 (`.swift-version`) |
 | iOS SDK | Xcode 27 (iOS 27 SDK) |
-| Deployment target | iOS 18 |
+| Deployment target | iOS 26 (Liquid Glass) |
 | Tests | Swift Testing |
 | Concurrency | Swift 6 language mode, `MainActor` by default in the app target |
 
@@ -37,7 +37,7 @@ pinned and installed for you on Ubuntu, Debian and Arch (Omarchy).
 |---|---|---|---|---|
 | macOS + Xcode | ✓ | ✓ | Simulator, iPhone (Xcode) | Xcode Archive |
 | Linux (Ubuntu, Debian, Arch) | ✓ | ✓ with the iOS SDK | iPhone over USB | `make upload` |
-| Claude Code cloud | ✓ | ✓ with `APPLE_SDK_URL` | – | `make upload` with keys |
+| Claude Code cloud | ✓ | ✓ with the iOS SDK | – | `make upload` with keys |
 | GitHub Actions | ✓ | ✓ (macOS job) | – | – |
 
 There is no iOS Simulator on Linux. App logic lives in `Core/`, a plain Swift
@@ -81,14 +81,9 @@ make setup
 
 This installs Swift with [swiftly](https://www.swift.org/install/linux/) (Arch:
 AUR `swift-bin`), which is enough for `make test` and `make lint`. iOS builds
-also need Apple's iOS SDK, which only ships inside Xcode:
-
-1. Download Xcode 27 (`.xip`) from https://developer.apple.com/download/all/?q=Xcode
-   with a free Apple ID. No Mac needed.
-2. Run `XCODE_XIP=~/Downloads/Xcode_27.xip make setup`.
-
-The first iOS setup builds xtool and its helpers from source (10 to 25
-minutes) and needs `sudo` for system packages. After that:
+also need the iOS SDK (next section). With it, the first setup builds xtool
+and its helpers from source (about 10 minutes) and needs `sudo` for system
+packages. After that:
 
 ```sh
 make build                # xtool/MyApp.app
@@ -99,6 +94,52 @@ make run                  # install and launch on a USB-connected iPhone
 For LLDB and wireless deploys, see `device-run.sh` in
 `~/.local/share/apple-env/omarchy-apple-dev`.
 
+## iOS SDK
+
+Linux builds need Apple's iOS SDK, which ships only inside Xcode. It must come
+from the Xcode whose Swift matches `.swift-version` (Swift 6.4 = Xcode 27).
+`make setup` takes it from any of these.
+
+**A. GitHub Actions (recommended; no Apple download, works for cloud sessions)**
+
+GitHub's macOS runners have Xcode installed. The **iOS SDK** workflow packs the
+SDK files from it (about 3 GB before compression), encrypts them, and stores
+them as the `darwin-sdk` artifact of your repository.
+
+1. Create a passphrase, for example with `openssl rand -base64 32`.
+2. Add it as the repository secret `APPLE_SDK_PASSPHRASE`
+   (Settings > Secrets and variables > Actions).
+3. Run the workflow: Actions > iOS SDK > Run workflow. It refreshes itself
+   monthly, because artifacts expire after 90 days.
+4. Give the same passphrase to every machine that builds:
+   - Claude Code cloud: add the environment variable `APPLE_SDK_PASSPHRASE` in
+     the cloud environment settings. Sessions reach the artifact through the
+     session's GitHub access.
+   - Your Linux machine: `APPLE_SDK_PASSPHRASE=... make setup`. It downloads the
+     artifact with the `gh` CLI login, or `APPLE_SDK_TOKEN` (a token with
+     Actions read access).
+
+The archive is encrypted because artifacts of public repositories can be
+downloaded by any signed-in GitHub user. Without the passphrase they are
+useless; never commit the passphrase. If the runner lacks the matching Xcode,
+the workflow lists the Xcodes it found; pick another runner label when you run it.
+
+**B. Xcode download (Linux machine)**
+
+Download Xcode 27 (`.xip`) from https://developer.apple.com/download/all/?q=Xcode
+with a free Apple ID, then run `XCODE_XIP=~/Downloads/Xcode_27.xip make setup`.
+
+**C. Your own storage**
+
+`make sdk-pack` writes an archive of the SDK: on macOS from your Xcode, on Linux
+from the installed SDK. It is encrypted when `APPLE_SDK_PASSPHRASE` is set.
+Upload it anywhere that gives a download URL and set `APPLE_SDK_URL` (plus
+`APPLE_SDK_PASSPHRASE`, and optionally `APPLE_SDK_SHA256` and `APPLE_SDK_TOKEN`
+for a Bearer token). An Xcode `.xip` URL works too.
+
+The SDK is Apple software under the Xcode license. Keep it private or
+encrypted, and note that Apple's license limits Xcode to Apple hardware.
+
 ## Claude Code cloud
 
 `.claude/settings.json` runs `.claude/hooks/session-start.sh` when a cloud
@@ -106,26 +147,11 @@ session starts. It installs Swift, puts it on `PATH` and reports what the
 session can do. With no further setup, Claude can edit the app and run
 `make test` and `make lint`.
 
-For full iOS builds in the cloud, give the session an iOS SDK. The quickest
-source is an archive of the SDK you already installed on Linux:
-
-1. On your Linux machine, after `make setup` with Xcode: `make sdk-pack`.
-   This writes `darwin-iPhoneOS27.0.xtoolsdk.tar.zst` and prints its SHA-256.
-2. Upload it to private storage that gives you a download URL, for example a
-   presigned S3, R2 or GCS URL, or a private GitHub release asset.
-3. In the cloud environment settings, add the environment variables:
-   - `APPLE_SDK_URL`: the download URL (an Xcode `.xip` URL also works)
-   - `APPLE_SDK_SHA256`: optional checksum
-   - `APPLE_SDK_TOKEN`: optional Bearer token, for example a fine-grained
-     GitHub token when the URL is `https://api.github.com/repos/OWNER/REPO/releases/assets/ID`
-
-The first session after that downloads the SDK and builds xtool, which takes
-up to an hour; the hook allows that. Later sessions reuse the environment
-cache and start in seconds. The environment's network access must allow
-`download.swift.org`, `github.com` and your SDK host.
-
-The SDK is Apple software under the Xcode license. Keep it private; never
-commit it or publish the URL.
+With an iOS SDK source (option A or C above), the first session also builds
+xtool and installs the SDK, which takes 15 to 30 minutes; the hook allows up
+to an hour. Later sessions reuse the environment cache and start in seconds.
+The environment's network access must allow `download.swift.org` and
+`github.com` (plus your SDK host for option C).
 
 ## TestFlight from Linux
 
@@ -147,9 +173,8 @@ review.
 `Sources/MyApp/AppIcon.icon` is an Icon Composer icon: `icon.json` plus layer
 images in `Assets/` (SVG or PNG). Edit it in Icon Composer (macOS, comes with
 Xcode 26 and later), or by hand. Xcode compiles it, and on Linux `make ship`
-compiles it with the omarchy-apple-dev `actool`, including the layered Liquid
-Glass icon for iOS 26 and the pre-rendered light, dark and tinted images for
-earlier iOS versions. Linux debug builds (`make build`, `make run`) do not
+compiles it with the omarchy-apple-dev `actool` into the layered Liquid Glass
+icon with its light, dark and tinted appearances. Linux debug builds (`make build`, `make run`) do not
 include the icon; App Store builds do.
 
 ## Updating versions

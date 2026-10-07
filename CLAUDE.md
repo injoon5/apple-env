@@ -23,7 +23,10 @@ the SDK is available.
 - Put logic in `Core/` with tests in `Core/Tests`. `Core` must not import
   SwiftUI, UIKit or other Apple-only frameworks, so it keeps building on Linux.
 - The app layer stays thin: views plus `@Observable` models that wrap Core types.
-- Deployment target is iOS 18; no `#available` checks below that.
+- Deployment target is iOS 26: use current APIs freely (Liquid Glass:
+  `glassEffect`, `GlassEffectContainer`, `.buttonStyle(.glass)` /
+  `.glassProminent`), no `#available` checks for iOS 26 or earlier. Let
+  system bars and toolbars provide glass; do not add custom backgrounds to them.
 - Load assets with `bundle: .assets` (`Image("x", bundle: .assets)`); the plain
   initializers miss xtool's resource bundle.
 - New files under `Sources/MyApp` need no project changes: Package.swift and
@@ -43,6 +46,7 @@ the SDK is available.
   the revision in `scripts/versions.env`. `. scripts/env.sh` puts it on PATH;
   Makefile targets do this already.
 - The iOS SDK cannot be downloaded without an Apple ID. Never try to fetch
-  Xcode from Apple; ask the user to set `APPLE_SDK_URL` (README, "Claude Code cloud").
+  Xcode from Apple. Ask the user to set up README "iOS SDK" option A (the
+  iOS SDK workflow plus `APPLE_SDK_PASSPHRASE` in the cloud environment).
 - There is no simulator or device in cloud sessions: verify with `make test`
   and `make build`, not by running the app.

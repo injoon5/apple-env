@@ -5,8 +5,8 @@ import PackageDescription
 let package = Package(
     name: "MyApp",
     platforms: [
-        .iOS(.v18),
-        .macOS(.v15),
+        .iOS(.v26),
+        .macOS(.v26),
     ],
     products: [
         // xtool builds the app from the package's single library product.
