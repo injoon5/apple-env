@@ -29,6 +29,9 @@ the SDK is available.
 - New files under `Sources/MyApp` need no project changes: Package.swift and
   project.yml both take the whole directory. Add dependencies to both
   Package.swift (xtool) and project.yml (Xcode).
+- The app icon is `Sources/MyApp/AppIcon.icon` (Icon Composer format). Keep
+  it out of SwiftPM resources (it is excluded in Package.swift) and do not add
+  an `AppIcon.appiconset`; two icons named AppIcon conflict.
 - Info.plist keys go in `Info.plist`, which both builds read. Use literal
   values; xtool does not expand `$(VARIABLES)`.
 - The app's bundle ID appears in `xtool.yml` and `project.yml`; use

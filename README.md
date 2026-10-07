@@ -48,7 +48,7 @@ an iOS SDK.
 
 ```
 Core/                     App logic and its tests (no UIKit or SwiftUI)
-Sources/MyApp/            SwiftUI app: views, observable models, Resources/Assets.xcassets
+Sources/MyApp/            SwiftUI app: views, models, AppIcon.icon, Resources/Assets.xcassets
 Package.swift, xtool.yml  The app for xtool (Linux)
 project.yml, Config/      The app for Xcode, generated with XcodeGen (macOS)
 Info.plist                Shared by both builds; version number lives here
@@ -140,8 +140,17 @@ ASC_KEY_PATH=~/keys/AuthKey_XXXXXXXXXX.p8 ASC_ISSUER_ID=<issuer> ASC_KEY_ID=XXXX
 
 `make upload` creates your distribution certificate and profile on first use,
 uploads the build and prints Apple's processing result. It never submits for
-review. The app icon comes from `AppIcon` in `Assets.xcassets`; replace
-`AppIcon.png` (1024x1024, no transparency).
+review.
+
+## App icon
+
+`Sources/MyApp/AppIcon.icon` is an Icon Composer icon: `icon.json` plus layer
+images in `Assets/` (SVG or PNG). Edit it in Icon Composer (macOS, comes with
+Xcode 26 and later), or by hand. Xcode compiles it, and on Linux `make ship`
+compiles it with the omarchy-apple-dev `actool`, including the layered Liquid
+Glass icon for iOS 26 and the pre-rendered light, dark and tinted images for
+earlier iOS versions. Linux debug builds (`make build`, `make run`) do not
+include the icon; App Store builds do.
 
 ## Updating versions
 

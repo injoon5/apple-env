@@ -82,10 +82,13 @@ Install Xcode $XCODE_MAJOR from the App Store, open it once, then run:
     *) die "Swift ${sv:-?} is too old: this project needs Xcode 26 or later (Xcode $XCODE_MAJOR recommended)" ;;
   esac
   log "Swift $sv"
-  if ! have xcodegen; then
-    have brew || die "XcodeGen is missing. Install Homebrew (https://brew.sh) and re-run, or see https://github.com/yonaskolb/XcodeGen#installing"
+  # XcodeGen 2.45.1 added Icon Composer (.icon) support.
+  local xg
+  xg=$(xcodegen --version 2>/dev/null | sed 's/^Version: //')
+  if [ -z "$xg" ] || [ "$(printf '%s\n' 2.45.1 "$xg" | sort -V | head -n1)" != 2.45.1 ]; then
+    have brew || die "XcodeGen 2.45.1 or later is needed. Install Homebrew (https://brew.sh) and re-run, or see https://github.com/yonaskolb/XcodeGen#installing"
     log "Installing XcodeGen (Homebrew)"
-    brew install xcodegen
+    if [ -n "$xg" ]; then brew upgrade xcodegen; else brew install xcodegen; fi
   fi
   log "XcodeGen $(xcodegen --version 2>/dev/null | sed 's/^Version: //')"
 }
@@ -239,7 +242,7 @@ setup_linux_ios() {
     debian)
       apt_install build-essential autoconf automake libtool-bin pkg-config libssl-dev zlib1g-dev \
         liblzma-dev libcurl4-openssl-dev libxml2-dev zip unzip zstd python3 python3-venv \
-        usbmuxd poppler-utils libheif-examples
+        usbmuxd poppler-utils libheif-examples librsvg2-bin
       build_limd
       ;;
     arch) ;;

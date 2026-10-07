@@ -26,6 +26,9 @@ let package = Package(
             dependencies: [
                 .product(name: "MyAppCore", package: "Core")
             ],
+            // Icon Composer icon: Xcode compiles it from project.yml, and on
+            // Linux `make ship` compiles it into the App Store build.
+            exclude: ["AppIcon.icon"],
             resources: [
                 .process("Resources")
             ],
