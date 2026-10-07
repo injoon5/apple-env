@@ -38,7 +38,7 @@ else
 fi
 if [ "$(uname -s)" = Darwin ]; then
   if have xcodegen; then
-    ok xcodegen "$(xcodegen --version 2>/dev/null)"
+    ok xcodegen "$(xcodegen --version 2>/dev/null | sed 's/^Version: //')"
   else
     no xcodegen "missing: run make setup"
     can_build=0
@@ -55,7 +55,7 @@ ok test "make test, make lint"
 if [ "$can_build" = 1 ]; then
   ok build "make build"
   if [ "$(uname -s)" = Darwin ]; then
-    ok run "make xcode (simulator, previews), make run (iPhone over USB)"
+    ok run "make xcode, then Cmd-R (simulator, previews, iPhone)"
   elif [ -n "${CLAUDE_CODE_REMOTE:-}${CI:-}" ]; then
     no run "no iPhone attached in the cloud; build only"
   else

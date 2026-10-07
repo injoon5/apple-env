@@ -38,6 +38,7 @@ build: ## Build the iOS app (CONFIG=release for a release build)
 	@xcodebuild -project $(APP).xcodeproj -scheme $(APP) -configuration $(if $(filter release,$(CONFIG)),Release,Debug) \
 		-destination 'generic/platform=iOS Simulator' -derivedDataPath .build/xcode \
 		CODE_SIGNING_ALLOWED=NO -quiet build
+	@echo "Build succeeded: .build/xcode/Build/Products/$(if $(filter release,$(CONFIG)),Release,Debug)-iphonesimulator/$(APP).app"
 
 run: ## Run on a device (Linux: iPhone over USB; macOS: from Xcode)
 	@echo "On macOS, run from Xcode: make xcode, pick a simulator or your iPhone, press Cmd-R."
@@ -58,7 +59,7 @@ else
 
 # xtool crashes without an iOS SDK; say what to do instead.
 REQUIRE_SDK := swift sdk list 2>/dev/null | grep -qw darwin || { \
-	echo "No iOS SDK installed. Run: XCODE_XIP=/path/to/Xcode.xip make setup (cloud: set APPLE_SDK_URL; see README)." >&2; exit 1; } &&
+	echo "No iOS SDK installed. See README, 'iOS SDK' (e.g. set APPLE_SDK_PASSPHRASE, then make setup)." >&2; exit 1; } &&
 
 build:
 	@$(ENV) $(REQUIRE_SDK) $(ULIMIT) xtool dev build --configuration $(CONFIG)
