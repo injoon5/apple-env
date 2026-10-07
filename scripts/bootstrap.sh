@@ -68,14 +68,29 @@ detect_os() {
 # --- macOS -------------------------------------------------------------------
 
 setup_macos() {
-  local dev
+  [ "$(id -u)" != 0 ] || die "run make setup without sudo: Homebrew refuses root, and files would end up owned by root.
+It asks for your password itself when it needs it."
+  local dev match
   dev=$(xcode-select -p 2>/dev/null || true)
+  match=$("$ROOT/scripts/sdk.sh" xcode 2>/dev/null || true)
   case "$dev" in
     *.app/Contents/Developer) ;;
-    *) die "Xcode is not selected (xcode-select -p: ${dev:-none}).
+    *)
+      if [ -n "$match" ]; then
+        die "Xcode is installed but not selected (xcode-select -p: ${dev:-none}). Run:
+  sudo xcode-select -s $match
+  sudo xcodebuild -license accept
+then make setup again."
+      fi
+      die "Xcode is not selected (xcode-select -p: ${dev:-none}).
 Install Xcode $XCODE_MAJOR from the App Store, open it once, then run:
-  sudo xcode-select -s /Applications/Xcode.app" ;;
+  sudo xcode-select -s /Applications/Xcode.app"
+      ;;
   esac
+  xcodebuild -license check >/dev/null 2>&1 ||
+    die "the Xcode license is not accepted yet. Run: sudo xcodebuild -license accept"
+  xcodebuild -checkFirstLaunchStatus >/dev/null 2>&1 ||
+    die "Xcode has not finished its first launch. Run: sudo xcodebuild -runFirstLaunch"
   xcrun --sdk iphoneos --show-sdk-path >/dev/null 2>&1 ||
     die "Xcode has no iOS SDK. Open Xcode > Settings > Components, or run: xcodebuild -downloadPlatform iOS"
   log "Xcode: $(xcodebuild -version | tr '\n' ' ')"
@@ -83,7 +98,8 @@ Install Xcode $XCODE_MAJOR from the App Store, open it once, then run:
   sv=$(swift --version 2>/dev/null | grep -oE 'Swift version [0-9]+\.[0-9]+' | head -n1 | awk '{print $3}')
   want=$(cut -d. -f1-2 <<<"$SWIFT_VERSION")
   [ "$sv" = "$want" ] ||
-    die "the selected Xcode has Swift ${sv:-?}; this project needs Swift $want (Xcode $XCODE_MAJOR). Install it, then: sudo xcode-select -s /Applications/Xcode.app"
+    die "the selected Xcode has Swift ${sv:-?}; this project needs Swift $want (Xcode $XCODE_MAJOR).
+${match:+It is installed: sudo xcode-select -s $match}"
   log "Swift $sv"
   # XcodeGen 2.45.1 added Icon Composer (.icon) support.
   local xg

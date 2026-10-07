@@ -91,8 +91,9 @@ XCODE_PIECES=(
 )
 
 # The newest installed Xcode whose Swift matches .swift-version (6.4 = Xcode 27).
+# Release Xcodes win over betas: App Store Connect rejects builds from beta SDKs.
 find_xcode() {
-  local want mm app swiftv best="" bestv=""
+  local want mm app swiftv best="" bestv="" beta="" betav=""
   want=$(tr -d '[:space:]' <"$ROOT/.swift-version")
   mm=$(cut -d. -f1-2 <<<"$want")
   for app in /Applications/Xcode*.app; do
@@ -103,11 +104,25 @@ find_xcode() {
     grep -qE "Swift version ${mm//./\\.}([^0-9]|$)" <<<"$swiftv" || continue
     local v
     v=$(plutil -extract CFBundleShortVersionString raw "$app/Contents/version.plist" 2>/dev/null || echo 0)
-    if [ -z "$best" ] || [ "$(printf '%s\n%s\n' "$bestv" "$v" | sort -V | tail -n1)" = "$v" ]; then
-      best=$app
-      bestv=$v
-    fi
+    case "$(basename "$app")" in
+      *[Bb]eta*)
+        if [ -z "$beta" ] || [ "$(printf '%s\n%s\n' "$betav" "$v" | sort -V | tail -n1)" = "$v" ]; then
+          beta=$app
+          betav=$v
+        fi
+        ;;
+      *)
+        if [ -z "$best" ] || [ "$(printf '%s\n%s\n' "$bestv" "$v" | sort -V | tail -n1)" = "$v" ]; then
+          best=$app
+          bestv=$v
+        fi
+        ;;
+    esac
   done
+  if [ -z "$best" ] && [ -n "$beta" ]; then
+    log "only a beta Xcode matches; fine for development, but App Store uploads need a release Xcode"
+    best=$beta
+  fi
   [ -n "$best" ] || die "no installed Xcode has Swift $mm (from .swift-version). Install the matching Xcode."
   echo "$best"
 }
