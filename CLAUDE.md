@@ -23,9 +23,10 @@ the SDK is available.
 - Put logic in `Core/` with tests in `Core/Tests`. `Core` must not import
   SwiftUI, UIKit or other Apple-only frameworks, so it keeps building on Linux.
 - The app layer stays thin: views plus `@Observable` models that wrap Core types.
-- Deployment target is iOS 26: use current APIs freely (Liquid Glass:
-  `glassEffect`, `GlassEffectContainer`, `.buttonStyle(.glass)` /
-  `.glassProminent`), no `#available` checks for iOS 26 or earlier. Let
+- Deployment target is iOS 27 with no older versions supported: use current
+  APIs freely (Liquid Glass: `glassEffect`, `GlassEffectContainer`,
+  `.buttonStyle(.glass)` / `.glassProminent`), never add `#available` checks
+  or fallbacks for older iOS. Let
   system bars and toolbars provide glass; do not add custom backgrounds to them.
 - Load assets with `bundle: .assets` (`Image("x", bundle: .assets)`); the plain
   initializers miss xtool's resource bundle.

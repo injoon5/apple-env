@@ -79,12 +79,11 @@ Install Xcode $XCODE_MAJOR from the App Store, open it once, then run:
   xcrun --sdk iphoneos --show-sdk-path >/dev/null 2>&1 ||
     die "Xcode has no iOS SDK. Open Xcode > Settings > Components, or run: xcodebuild -downloadPlatform iOS"
   log "Xcode: $(xcodebuild -version | tr '\n' ' ')"
-  local sv
+  local sv want
   sv=$(swift --version 2>/dev/null | grep -oE 'Swift version [0-9]+\.[0-9]+' | head -n1 | awk '{print $3}')
-  case "$sv" in
-    6.[2-9]* | [7-9].*) ;;
-    *) die "Swift ${sv:-?} is too old: this project needs Xcode 26 or later (Xcode $XCODE_MAJOR recommended)" ;;
-  esac
+  want=$(cut -d. -f1-2 <<<"$SWIFT_VERSION")
+  [ "$sv" = "$want" ] ||
+    die "the selected Xcode has Swift ${sv:-?}; this project needs Swift $want (Xcode $XCODE_MAJOR). Install it, then: sudo xcode-select -s /Applications/Xcode.app"
   log "Swift $sv"
   # XcodeGen 2.45.1 added Icon Composer (.icon) support.
   local xg

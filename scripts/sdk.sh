@@ -262,6 +262,7 @@ case "${1:-status}" in
   status) cmd_status ;;
   fetch) cmd_fetch "${2:-}" ;;
   pack) cmd_pack "${2:-}" ;;
+  xcode) find_xcode ;; # macOS: path of the Xcode that matches .swift-version
   -h | --help) sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//' ;;
-  *) die "unknown command: $1 (status, fetch, pack)" ;;
+  *) die "unknown command: $1 (status, fetch, pack, xcode)" ;;
 esac

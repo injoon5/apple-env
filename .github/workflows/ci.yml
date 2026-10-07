@@ -30,6 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - run: brew install xcodegen
-      - run: xcodebuild -version
+      - name: Select the Xcode that matches .swift-version
+        run: sudo xcode-select -s "$(scripts/sdk.sh xcode)" && xcodebuild -version
       - run: make test
       - run: make build

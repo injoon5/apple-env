@@ -1,4 +1,4 @@
-// swift-tools-version: 6.2
+// swift-tools-version: 6.4
 
 import PackageDescription
 
@@ -7,9 +7,9 @@ import PackageDescription
 let package = Package(
     name: "MyAppCore",
     platforms: [
-        .iOS(.v26),
-        // Lower than the app so `make test` runs on any Mac that runs Xcode 26.
-        .macOS(.v15),
+        .iOS(.v27),
+        // So `make test` also runs on a Mac still on macOS 26 with Xcode 27.
+        .macOS(.v26),
     ],
     products: [
         .library(

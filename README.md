@@ -9,7 +9,7 @@ pinned and installed for you on Ubuntu, Debian and Arch (Omarchy).
 |---|---|
 | Swift | 6.4.0 (`.swift-version`) |
 | iOS SDK | Xcode 27 (iOS 27 SDK) |
-| Deployment target | iOS 26 (Liquid Glass) |
+| Deployment target | iOS 27, no older versions |
 | Tests | Swift Testing |
 | Concurrency | Swift 6 language mode, `MainActor` by default in the app target |
 
@@ -61,7 +61,8 @@ Both builds compile the same `Sources/MyApp`. Load images and colors with
 
 ## macOS
 
-Install Xcode 27 from the App Store and open it once. Then:
+Install Xcode 27 from the App Store (required: the manifests use
+`swift-tools-version: 6.4`) and open it once. Then:
 
 ```sh
 make setup      # checks Xcode, installs XcodeGen with Homebrew
@@ -172,7 +173,7 @@ review.
 
 `Sources/MyApp/AppIcon.icon` is an Icon Composer icon: `icon.json` plus layer
 images in `Assets/` (SVG or PNG). Edit it in Icon Composer (macOS, comes with
-Xcode 26 and later), or by hand. Xcode compiles it, and on Linux `make ship`
+Xcode), or by hand. Xcode compiles it, and on Linux `make ship`
 compiles it with the omarchy-apple-dev `actool` into the layered Liquid Glass
 icon with its light, dark and tinted appearances. Linux debug builds (`make build`, `make run`) do not
 include the icon; App Store builds do.
