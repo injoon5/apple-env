@@ -26,7 +26,8 @@ jobs:
 
   macos:
     name: Build app and test (macOS, Xcode)
-    runs-on: macos-26
+    # GitHub ships one runner image per Xcode major; macos-26 stops at Xcode 26.
+    runs-on: xcode-27
     steps:
       - uses: actions/checkout@v5
       - run: brew install xcodegen

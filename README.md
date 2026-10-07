@@ -103,8 +103,8 @@ from the Xcode whose Swift matches `.swift-version` (Swift 6.4 = Xcode 27).
 
 **A. GitHub Actions (recommended; no Apple download, works for cloud sessions)**
 
-GitHub's macOS runners have Xcode installed. The **iOS SDK** workflow packs the
-SDK files from it (about 3 GB before compression), encrypts them, and stores
+GitHub's macOS runners have Xcode installed (the `xcode-27` runner image has
+Xcode 27). The **iOS SDK** workflow packs the SDK files from it (about 3 GB before compression), encrypts them, and stores
 them as the `darwin-sdk` artifact of your repository.
 
 1. Create a passphrase, for example with `openssl rand -base64 32`.
