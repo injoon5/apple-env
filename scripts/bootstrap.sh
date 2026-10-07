@@ -115,16 +115,20 @@ ${match:+It is installed: sudo xcode-select -s $match}"
 # --- Linux: Swift ------------------------------------------------------------
 
 apt_updated=0
+# Container images often ship without package lists; apt-get install then
+# cannot locate anything.
+apt_update() {
+  [ "$apt_updated" = 0 ] || return 0
+  as_root apt-get update -qq
+  apt_updated=1
+}
 apt_install() {
   local missing=() pkg
   for pkg in "$@"; do
     dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null | grep -q "install ok installed" || missing+=("$pkg")
   done
   [ ${#missing[@]} -eq 0 ] && return 0
-  if [ "$apt_updated" = 0 ]; then
-    as_root apt-get update -qq
-    apt_updated=1
-  fi
+  apt_update
   log "apt: ${missing[*]}"
   as_root env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends "${missing[@]}" >/dev/null
 }
@@ -144,18 +148,21 @@ install_swift_swiftly() {
   fi
   . "$SWIFTLY_HOME_DIR/env.sh"
   hash -r
+  # The system packages swiftly asks for. The file stays until they are
+  # installed, so a re-run retries them even though Swift itself is in place.
+  local post="$STATE_DIR/swift-post-install.sh"
+  mkdir -p "$STATE_DIR"
   if [ ! -x "$SWIFTLY_HOME_DIR/toolchains/$SWIFT_VERSION/usr/bin/swift" ]; then
     log "Installing Swift $SWIFT_VERSION (about 1 GB)"
-    local post
-    post=$(mktemp)
     # From $HOME so swiftly does not rewrite this project's .swift-version.
     (cd "$HOME" && swiftly install "$SWIFT_VERSION" --assume-yes --post-install-file "$post" >/dev/null)
-    if [ -s "$post" ]; then
-      log "Swift system dependencies"
-      as_root bash "$post"
-    fi
-    rm -f "$post"
   fi
+  if [ -s "$post" ]; then
+    log "Swift system dependencies"
+    [ "$OS" = debian ] && apt_update
+    as_root bash "$post"
+  fi
+  rm -f "$post"
   # Become the global default only when there is none yet.
   (cd "$HOME" && swiftly use --print-location >/dev/null 2>&1) ||
     (cd "$HOME" && swiftly use --global-default "$SWIFT_VERSION" --assume-yes >/dev/null)
