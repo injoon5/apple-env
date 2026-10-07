@@ -1,0 +1,23 @@
+.DS_Store
+.build/
+/xtool/
+*.ipa
+xcuserdata/
+DerivedData/
+.swiftpm/
+.bsp/
+.sourcekit-lsp/
+.vscode/
+.idea/
+
+# Generated from project.yml by `make xcode`
+/*.xcodeproj
+/*.xcworkspace
+
+# Machine-specific Xcode settings (signing team)
+/Config/Local.xcconfig
+
+# App Store Connect keys and SDK archives never belong in git
+*.p8
+*.xtoolsdk.tar.*
+.env

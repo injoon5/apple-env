@@ -1,0 +1,5 @@
+# xtool project file (Linux builds; macOS uses project.yml with Xcode).
+version: 1
+bundleID: com.example.myapp
+# Merged over the Info.plist xtool generates. Xcode reads the same file.
+infoPath: Info.plist

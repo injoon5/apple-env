@@ -1,0 +1,4 @@
+// Shared Xcode settings. Machine-specific values (your signing team) go in
+// Local.xcconfig next to this file, which git ignores. `make xcode` creates it
+// from $DEVELOPMENT_TEAM, or copy Local.xcconfig.example.
+#include? "Local.xcconfig"

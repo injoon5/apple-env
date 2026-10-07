@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    name: Lint and test (Linux)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/cache@v4
+        with:
+          path: ~/.local/share/swiftly
+          key: swiftly-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.swift-version') }}
+      - run: scripts/bootstrap.sh --core
+      - run: make lint
+      - run: make test
+
+  macos:
+    name: Build app and test (macOS, Xcode)
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v5
+      - run: brew install xcodegen
+      - run: xcodebuild -version
+      - run: make test
+      - run: make build
